@@ -1,0 +1,59 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+import uuid
+from selenium.common.exceptions import NoSuchElementException
+
+driver = webdriver.Chrome()
+url = 'https://www.seek.com.au/power-bi-jobs?page=3'
+driver.get(url)
+from bs4 import BeautifulSoup
+import requests
+import time
+import uuid
+import csv
+
+while True:
+    # Find and store the URLs of each job listing on the current page
+    job_name_elements = driver.find_elements(By.CSS_SELECTOR, 'a[data-automation="jobTitle"]')
+    job_urls = [job.get_attribute("href") for job in job_name_elements]
+
+    # Open each job in a new tab, save content as HTML, and close the tab
+    for job_url in job_urls:
+        # Open a new tab and switch to it
+        driver.execute_script("window.open('');")
+        driver.switch_to.window(driver.window_handles[-1])
+
+        # Navigate to the job URL in the new tab
+        driver.get(job_url)
+
+        # Wait for a brief moment to ensure the job content is loaded
+        time.sleep(2)  # Adjust the sleep duration as needed
+
+        # Capture the job content as HTML
+        job_content_html = driver.page_source
+
+        # Generate a random filename
+        random_filename = str(uuid.uuid4())
+
+        # Save the job content as an HTML file
+        with open(f'{random_filename}.html', 'w', encoding='utf-8') as file:
+            file.write(job_content_html)
+
+        # Close the current tab (the job page)
+        driver.close()
+
+        # Switch back to the original tab (job listings page)
+        driver.switch_to.window(driver.window_handles[0])
+
+    try:
+        # Find and click on the "Next" page button/link using the provided class
+        next_page_element = driver.find_element(By.XPATH, '//span[@class="_1wkzzau0 a1msqi5a a1msqife a1msqifq a1msqio a1msqiq a1msqi5e _1y1etja0"]')
+        if "disabled" in next_page_element.get_attribute("class"):
+            break  # No more pages to navigate to
+        next_page_element.click()
+    except NoSuchElementException:
+        break  # No "Next" page element found
+
+# Close the WebDriver
+driver.quit()
